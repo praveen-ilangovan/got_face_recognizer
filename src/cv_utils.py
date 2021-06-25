@@ -169,7 +169,7 @@ def display_image(imgpath: str, window_name: str= constants.NAME, wait: int= 0) 
             user closes it.
     """
     img = read_image(imgpath)
-    img = resize_image(img, height=250)
+    img = resize_image(img, height=constants.RESIZE_HEIGHT)
     rects = get_faces(img)
 
     for x,y,w,h in rects:

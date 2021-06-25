@@ -11,3 +11,6 @@ TRAINING_DATA_DIR = os.path.join(RESOURCES_DIR, "training")
 # Classifiers
 HAAR_CASCADE = "haar_cascade"
 AVAILABLE_CLASSIFIERS = [HAAR_CASCADE]
+
+# Face detection
+RESIZE_HEIGHT = 250
