@@ -1,11 +1,11 @@
 import pytest
 
 from src import utils
-from . import testdata
+from .conftest import TEST_FILES
 
 def test_file_exists():
     """
     Test if files exist
     """
-    for f in testdata.TEST_FILES:
+    for f in TEST_FILES:
         assert utils.file_exists(f) == True
