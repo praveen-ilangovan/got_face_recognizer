@@ -1,80 +1,112 @@
+# -*- coding: utf-8 -*-
+
+"""
+GOT Face Recognizer
+
+Module that prepares the training set, trains the model and calls the
+function that predicts the character.
+"""
+
+# Python built-in imports
 import os
-import cv2 as cv #type: ignore
-import numpy as np
+
+# Project specific imports
 from typing import List
+import numpy as np
 
-from . import cv_utils, constants, utils
+# Local imports
+from . import (cv_utils, utils)
+from . import constants as Key
 
+#-----------------------------------------------------------------------------#
+#
+# Prepare the training set
+#
+#-----------------------------------------------------------------------------#
 def prepare_training_set() -> None:
     """
     Loop through the images in the training directory and
-    prepare features and labels set that could then be passed
-    to the train model
+    create features and labels set that could then be passed
+    to train model.
     """
     features = []
     labels = []
 
-    for index, person in enumerate(constants.PEOPLE):
-        dirpath = os.path.join(constants.TRAINING_DATA_DIR, person)
+    for index, person in enumerate(Key.PEOPLE):
+        dirpath = os.path.join(Key.TRAINING_DATA_DIR, person)
         for imgname in os.listdir(dirpath):
-            imgpath = os.path.join(dirpath, imgname)
-            img = cv_utils.read_image(imgpath)
+            img = cv_utils.prepare_image( os.path.join(dirpath, imgname) )
             if not img:
                 continue
 
-            for face in cv_utils.get_faces(img):
-                # face[0] -> face coordinates
-                # face[1] -> grayscale face image
-                features.append(face[1])
+            for _, face in cv_utils.get_faces(img):
+                features.append(face)
                 labels.append(index)
 
-    np.save(constants.FEATURES_NPY, np.array(features, dtype="object"))
-    np.save(constants.LABELS_NPY, np.array(labels))
+    np.save(Key.FEATURES_NPY, np.array(features, dtype="object"))
+    np.save(Key.LABELS_NPY, np.array(labels))
 
     print("Training set prepared!")
 
+#-----------------------------------------------------------------------------#
+#
+# Train the model
+#
+#-----------------------------------------------------------------------------#
 def train_model() -> None:
     """
     Train the model and save it on disk
     """
-    for f in (constants.FEATURES_NPY, constants.LABELS_NPY):
+    for f in (Key.FEATURES_NPY, Key.LABELS_NPY):
         if not utils.file_exists(f):
             print("Failed to find training set: {0}".format(f))
             print("Preparing training set..")
             prepare_training_set()
             break
     
-    features = np.load(constants.FEATURES_NPY, allow_pickle=True)
-    labels = np.load(constants.LABELS_NPY)
+    features = np.load(Key.FEATURES_NPY, allow_pickle=True)
+    labels = np.load(Key.LABELS_NPY)
     cv_utils.train_model(features, labels)
 
     print("Model trained!")
 
-def who_is_this(imgpath: str, show:bool = True) -> List:
+#-----------------------------------------------------------------------------#
+#
+# Function that predicts the character
+#
+#-----------------------------------------------------------------------------#
+def who_is_this(imgpath: str, show: bool = True) -> List:
     """
     Extract the face and predict the name of the person using the trained
-    model
+    model.
+
+    Args:
+        imgpath str: Image
+        show bool: Displays the image with a rectangle around the face and
+            the name of the person. Defaults to True
+
+    rtype:
+        List
+
+    Returns:
+        A list of names as predicted by the trained model.
     """
-    if not utils.file_exists(constants.MODEL_FILE):
-        print("Trained model not found. Lets train again.")
+    if not utils.file_exists(Key.MODEL_FILE):
+        print("Trained model not found. Lets train now.")
         train_model()
 
-    img = cv_utils.read_image(imgpath)
+    # Read the image
+    img = cv_utils.prepare_image(imgpath)
     if img is None:
         return []
 
+    # Get predictions.
+    # Returns a list of rect coordinates, name and confidence
     predictions = cv_utils.predict(img)    
 
     if show:
-        resized = cv_utils.resize_image(img, height=constants.RESIZE_HEIGHT)
-        for rect, name, confidence in predictions:
-            x,y,w,h = rect
-            text = "{0}[{1}]".format(name.replace("_", " "), int(confidence))
-            cv.rectangle(resized, (x,y), (x+w, y+h), (0,128,0), thickness=2)
-            cv.putText(resized, text, (x,y+h+20),
-                       cv.FONT_HERSHEY_COMPLEX_SMALL, 0.5, (0,128,0), 1)
-        
-        cv_utils.show_image(resized)
+        cv_utils.display_image_with_predictions(img, predictions)
 
+    # Return the names
     return [p[1] for p in predictions]
     

@@ -1,14 +1,25 @@
-# Python imports
+# -*- coding: utf-8 -*-
+
+"""
+GOT Face Recognizer
+
+Module that has all the open cv functionalities used in this
+project.
+"""
+
+# Python built-in imports
 import os
 from typing import List, Optional
 
 # Project specific imports
+# "type:ignore" -> cv2 doesn't have type annotations stubs.
+# setting type to ignore let mypy to ignore this module.
 import cv2 as cv #type: ignore
 import numpy as np
 
 # Local imports
 from . import utils
-from . import constants
+from . import constants as Key
 
 #-----------------------------------------------------------------------------#
 #
@@ -92,7 +103,64 @@ def resize_image(img: np.ndarray, width: int= -1,
     # return the resized image
     return resized
 
-def get_faces(img: np.ndarray, classifier: str= constants.HAAR_CASCADE) -> List:
+#-----------------------------------------------------------------------------#
+#
+# Classifiers
+#
+#-----------------------------------------------------------------------------#
+def get_classifer(classifier: str) -> Optional[cv.CascadeClassifier]:
+    """ Return the cascade classifier
+
+    Args:
+        classifier str: Name of the classifier to use
+
+    rtype:
+        cv.CascadeClassifier | None
+
+    Returns:
+        Requested classifier
+    """
+    if classifier == Key.HAAR_CASCADE:
+        return get_haar_cascade_classifier()
+    return None
+
+def get_haar_cascade_classifier() -> cv.CascadeClassifier:
+    """ Return haar cascade classifier
+
+    rtype:
+        cv.CascadeClassifier
+    """
+    return cv.CascadeClassifier(cv.data.haarcascades + Key.HAAR_CASCADE_FILE)
+
+#-----------------------------------------------------------------------------#
+#
+# Face Recognizion
+#
+#-----------------------------------------------------------------------------#
+def prepare_image(imgpath: str,
+                  resize_width: int=-1,
+                  resize_height: int=Key.RESIZE_HEIGHT) -> Optional[np.ndarray]:
+    """ Prepare the image to get faces from it.
+    Reads the image from the path and resizes it
+
+    Args:
+        imgpath str: Path to an image file
+        width int: Width to resize to
+        height int: Height to resize to
+
+    rtype:
+        numpy.ndarray | None
+
+    Returns:
+        A numpy array
+    """
+    img = read_image(imgpath)
+    if img is None:
+        return None
+
+    return resize_image(img, width=resize_width, height=resize_height)
+
+def get_faces(img: np.ndarray, classifier: str= Key.HAAR_CASCADE) -> List:
     """ Detect faces in the image using the specified classifier and return
     a list of face coordinates (rectangle (x,y,w,h)) and cropped gray scale
     images of the face
@@ -108,9 +176,6 @@ def get_faces(img: np.ndarray, classifier: str= constants.HAAR_CASCADE) -> List:
         A list of rectangle coordinates and
         cropped grayscale image of face: [[x,y,w,h], grayscale_img]
     """
-    # resize
-    img = resize_image(img, height=constants.RESIZE_HEIGHT)
-
     # convert it to gray
     gray = convert_to_grayscale(img)
 
@@ -118,69 +183,55 @@ def get_faces(img: np.ndarray, classifier: str= constants.HAAR_CASCADE) -> List:
     cascade_classifier = get_classifer(classifier)
     if cascade_classifier is None:
         return []
-    face_rects = cascade_classifier.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4)
+    rects = cascade_classifier.detectMultiScale(gray,
+                scaleFactor=1.1, minNeighbors=4)
 
     # For each rect, crop the face
-    faces = []
-    for x,y,w,h in face_rects:
-        faces.append( ((x,y,w,h), gray[y:y+h, x:x+w]) )
+    return [((x,y,w,h), gray[y:y+h, x:x+w]) for x,y,w,h in rects]
 
-    return faces
-
-#-----------------------------------------------------------------------------#
-#
-# Classifiers
-#
-#-----------------------------------------------------------------------------#
-def get_classifer(classifier: str) -> Optional[cv.CascadeClassifier]:
-    """ Return the cascade classifier
-    """
-    if classifier == constants.HAAR_CASCADE:
-        return get_haar_cascade_classifier()
-    return None
-
-def get_haar_cascade_classifier() -> cv.CascadeClassifier:
-    """ Return haar cascade classifier
-
-    rtype:
-        cv.CascadeClassifier
-    """
-    return cv.CascadeClassifier(cv.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
-#-----------------------------------------------------------------------------#
-#
-# Face Recognizion
-#
-#-----------------------------------------------------------------------------#
-def train_model(features: np.ndarray, labels: np.ndarray, savepath: Optional[str]=None) -> None:
+def train_model(features: np.ndarray, labels: np.ndarray,
+                savepath: Optional[str]=None) -> None:
     """
     Train the model using the features and labels array
 
     Args:
         features np.ndarray: An numpy array of facial information
         labels np.ndarray: An numpy array of corresponding index of the person.
-            This index points to the person in the constants.PEOPLE list
+            This index points to the person in the Key.PEOPLE list
         savepath str: Optionally, a path could be provided to save the trained model
     """
     face_recognizer = cv.face.LBPHFaceRecognizer_create()
     face_recognizer.train(features, labels)
 
     if not savepath:
-        savepath = constants.MODEL_FILE
+        savepath = Key.MODEL_FILE
 
     face_recognizer.save(savepath)
 
-def predict(img: np.ndarray) -> List:
-    """ Predict the face
+def predict(img: np.ndarray, model: Optional[str]=None) -> List:
+    """ Predict the face using the trained model
+
+    Args:
+        img np.ndarray: Image in an numpy array format
+        model str: Optionally provide your own model file path
+
+    rtype:
+        List
+
+    Returns:
+        A list of predicted information
+        [(face_coords, name, confidence)]
     """
+    model = model or Key.MODEL_FILE
+
     # Reconizer
     face_recognizer = cv.face.LBPHFaceRecognizer_create()
-    face_recognizer.read(constants.MODEL_FILE)
+    face_recognizer.read(model)
 
     predictions = []
     for rect, face in get_faces(img):
         label, confidence = face_recognizer.predict(face)
-        predictions.append((rect, constants.PEOPLE[label], confidence))
+        predictions.append((rect, Key.PEOPLE[label], confidence))
 
     return predictions
 
@@ -189,41 +240,39 @@ def predict(img: np.ndarray) -> List:
 # Display the image
 #
 #-----------------------------------------------------------------------------#
-def show_image(img: np.ndarray, window_name: str= constants.NAME, wait: int= 0) -> None:
+def display_image_with_predictions(img: np.ndarray, predictions: List) -> None:
+    """
+    Display the image with predicted information: Face rect, predicted name
+    and the confidence level
+
+    Args:
+        img np.ndarray: An opencv image stored as numpy array
+        predictions List: List of face coords, name and confidence
+    """
+    color = (0,128,0)
+
+    for rect, name, confidence in predictions:
+        x,y,w,h = rect
+        text = "{0}[{1}%]".format(name.replace("_", " "), int(confidence))
+
+        # Draw a rectangle around the face
+        cv.rectangle(img, (x,y), (x+w, y+h), color, thickness=2)
+        # Write the name and confidence below the rectangle
+        cv.putText(img, text, (x,y+h+20),
+                    cv.FONT_HERSHEY_COMPLEX_SMALL, 0.5, color, 1)
+    
+    show_image(img)
+
+def show_image(img: np.ndarray,
+               winname: str= Key.NAME, wait: int= 0) -> None:
     """ Displays the image using cv.imshow method
 
     Args:
         img np.ndarray: An opencv image stored as numpy array
-        window_name str: Name of the window
+        winname str: Name of the window
         wait int: Number of milliseconds to wait before the window closes.
             Defaults to 0 and this makes sure the window shows until the
             user closes it.
     """
-    if img is None:
-        return
-
-    cv.imshow(window_name, img)
+    cv.imshow(winname, img)
     cv.waitKey(wait)
-
-def display_image(imgpath: str, window_name: str= constants.NAME, wait: int= 0) -> None:
-    """ Reads and shows the image using opencv module
-
-    Args:
-        imgpath str: Path to an image file
-        window_name str: Name of the window
-        wait int: Number of milliseconds to wait before the window closes.
-            Defaults to 0 and this makes sure the window shows until the
-            user closes it.
-    """
-    img = read_image(imgpath)
-    if not img:
-        return None
-
-    faces = get_faces(img)
-
-    for rect, face in faces:
-        x,y,w,h = rect
-        img = resize_image(img, height=constants.RESIZE_HEIGHT)
-        cv.rectangle(img, (x,y), (x+w, y+h), (0,128,0), thickness=2)
-
-    show_image(img)

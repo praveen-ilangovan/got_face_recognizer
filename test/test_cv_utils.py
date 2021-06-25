@@ -24,5 +24,6 @@ def test_resize_image_width(read_images):
 
 def test_get_faces(read_images):
     for img in read_images:
-        faces = cv_utils.get_faces(img)
+        resized = cv_utils.resize_image(img, height=constants.RESIZE_HEIGHT)
+        faces = cv_utils.get_faces(resized)
         assert len(faces) == 1
