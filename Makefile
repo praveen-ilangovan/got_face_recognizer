@@ -6,7 +6,7 @@
 # Python installer
 PYTHON = py
 
-# Runs src help by default when no target is specified
+# Runs by default when no target is specified
 .DEFAULT_GOAL = all
 
 # Input variable. 
@@ -23,6 +23,6 @@ test:
 	${PYTHON} -m pytest
 
 run:
-	${PYTHON} -m src $(IMAGE)
+	${PYTHON} -m src ${IMAGE}
 
 all: check run
