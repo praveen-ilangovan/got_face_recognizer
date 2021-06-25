@@ -2,8 +2,7 @@
 import argparse
 
 # Local imports
-from . import cv_utils
-from . import constants
+from . import cv_utils, face_recognizer
 
 #-----------------------------------------------------------------------------#
 DES = "Game of Thrones - Face Recognizer: \
@@ -22,7 +21,9 @@ def main() -> None:
     """ Main function. Gets called when the module is called from the cmdline.
     """
     args = PARSER.parse_args()
-    cv_utils.display_image(args.image)
+    # cv_utils.display_image(args.image)
+    print(face_recognizer.who_is_this(args.image))
+
 
 if __name__ == '__main__':
     main()

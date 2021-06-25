@@ -1,4 +1,5 @@
 import os
+from src import face_recognizer
 from typing import List, Optional
 
 import cv2 as cv #type: ignore
@@ -105,8 +106,12 @@ def get_faces(img: Optional[np.ndarray], classifier: str= constants.HAAR_CASCADE
         List
 
     Returns:
-        A list of rectangle coordinates: [[x,y,w,h]]
+        A list of rectangle coordinates and
+        cropped grayscale image of face: [[x,y,w,h], grayscale_img]
     """
+    # resize
+    img = resize_image(img, height=constants.RESIZE_HEIGHT)
+
     # convert it to gray
     gray = convert_to_grayscale(img)
 
@@ -114,7 +119,14 @@ def get_faces(img: Optional[np.ndarray], classifier: str= constants.HAAR_CASCADE
     cascade_classifier = get_classifer(classifier)
     if cascade_classifier is None:
         return []
-    return cascade_classifier.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4)
+    face_rects = cascade_classifier.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4)
+
+    # For each rect, crop the face
+    faces = []
+    for x,y,w,h in face_rects:
+        faces.append( ((x,y,w,h), gray[y:y+h, x:x+w]) )
+
+    return faces
 
 #-----------------------------------------------------------------------------#
 #
@@ -134,8 +146,47 @@ def get_haar_cascade_classifier() -> cv.CascadeClassifier:
     rtype:
         cv.CascadeClassifier
     """
-    cascade_file = os.path.join(constants.CLASSIFIERS_DIR, "haar_face.xml")
-    return cv.CascadeClassifier(cascade_file)
+    # cascade_file = os.path.join(constants.CLASSIFIERS_DIR, "haar_face.xml")
+    # return cv.CascadeClassifier(cascade_file)
+
+    return cv.CascadeClassifier(cv.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+#-----------------------------------------------------------------------------#
+#
+# Face Recognizion
+#
+#-----------------------------------------------------------------------------#
+def train_model(features: np.ndarray, labels: np.ndarray, savepath: Optional[str]=None) -> None:
+    """
+    Train the model using the features and labels array
+
+    Args:
+        features np.ndarray: An numpy array of facial information
+        labels np.ndarray: An numpy array of corresponding index of the person.
+            This index points to the person in the constants.PEOPLE list
+        savepath str: Optionally, a path could be provided to save the trained model
+    """
+    face_recognizer = cv.face.LBPHFaceRecognizer_create()
+    face_recognizer.train(features, labels)
+
+    if not savepath:
+        savepath = constants.MODEL_FILE
+
+    face_recognizer.save(savepath)
+
+def predict(img: Optional[np.ndarray]) -> List:
+    """ Predict the face
+    """
+    # Reconizer
+    face_recognizer = cv.face.LBPHFaceRecognizer_create()
+    face_recognizer.read(constants.MODEL_FILE)
+
+    predictions = []
+    for rect, face in get_faces(img):
+        label, confidence = face_recognizer.predict(face)
+        predictions.append((rect, constants.PEOPLE[label], confidence))
+
+    return predictions
 
 #-----------------------------------------------------------------------------#
 #
@@ -169,10 +220,11 @@ def display_image(imgpath: str, window_name: str= constants.NAME, wait: int= 0) 
             user closes it.
     """
     img = read_image(imgpath)
-    img = resize_image(img, height=constants.RESIZE_HEIGHT)
-    rects = get_faces(img)
+    faces = get_faces(img)
 
-    for x,y,w,h in rects:
+    for rect, face in faces:
+        x,y,w,h = rect
+        img = resize_image(img, height=constants.RESIZE_HEIGHT)
         cv.rectangle(img, (x,y), (x+w, y+h), (0,128,0), thickness=2)
 
     show_image(img)
