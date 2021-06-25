@@ -62,9 +62,10 @@ def who_is_this(imgpath: str, show:bool = True) -> List:
         resized = cv_utils.resize_image(img, height=constants.RESIZE_HEIGHT)
         for rect, name, confidence in predictions:
             x,y,w,h = rect
+            text = "{0}[{1}]".format(name.replace("_", " "), int(confidence))
             cv.rectangle(resized, (x,y), (x+w, y+h), (0,128,0), thickness=2)
-            cv.putText(resized, name.replace("_", " "), (x,y+h+20),
-                       cv.FONT_HERSHEY_COMPLEX_SMALL, 1, (0,128,0), 1)
+            cv.putText(resized, text, (x,y+h+20),
+                       cv.FONT_HERSHEY_COMPLEX_SMALL, 0.5, (0,128,0), 1)
         
         cv_utils.show_image(resized)
 
