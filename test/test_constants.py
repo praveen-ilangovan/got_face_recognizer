@@ -1,25 +1,44 @@
-import pytest
+# -*- coding: utf-8 -*-
+
+"""
+GOT Face Recognizer
+
+Testing src.constants module
+"""
+
+# Python built-in imports
 import os
 
-from src import constants
+# Local imports
+from src import constants as Key
 
+#-----------------------------------------------------------------------------#
+#
+# Globals
+#
+#-----------------------------------------------------------------------------#
 CWD = os.path.dirname(__file__)
 ROOT = os.path.dirname(CWD)
 
+#-----------------------------------------------------------------------------#
+#
+# Tests
+#
+#-----------------------------------------------------------------------------#
 def test_name():
-    assert constants.NAME == "GOT Face Recognizer"
+    assert Key.NAME == "GOT Face Recognizer"
 
 def test_src_directory():
-    assert constants.SRC_DIR == os.path.join(ROOT, "src")
+    assert Key.SRC_DIR == os.path.join(ROOT, "src")
 
 def test_resources_directory():
-    assert constants.RESOURCES_DIR == os.path.join(ROOT, "resources")
+    assert Key.RESOURCES_DIR == os.path.join(ROOT, "resources")
 
 def test_classifiers_directory():
-    assert constants.CLASSIFIERS_DIR == os.path.join(ROOT, "resources", "classifiers")
+    assert Key.CLASSIFIERS_DIR == os.path.join(ROOT, "resources", "classifiers")
 
 def test_training_directory():
-    assert constants.TRAINING_DATA_DIR == os.path.join(ROOT, "resources", "training")
+    assert Key.TRAINING_DATA_DIR == os.path.join(ROOT, "resources", "training")
 
 def test_haar_cascade_exists():
-    assert os.path.isfile(os.path.join(constants.CLASSIFIERS_DIR, "haar_face.xml"))
+    assert os.path.isfile(os.path.join(Key.CLASSIFIERS_DIR, "haar_face.xml"))
