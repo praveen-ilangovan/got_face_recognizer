@@ -1,4 +1,5 @@
 # Makefile for GOT Face Recognizer
+
 # make test -> to run tests
 # make check -> to run mypy
 # make run -> to run the module
@@ -13,16 +14,18 @@ PYTHON = py
 # make run IMAGE="<PATH TO AN IMAGE FILE>"
 IMAGE = ""
 
+# TODO: Activate virtual environment
+
 help:
 	${PYTHON} -m src --help
 
 check:
 	mypy src
 
-test:
+tests:
 	${PYTHON} -m pytest
 
 run:
 	${PYTHON} -m src ${IMAGE}
 
-all: check run
+all: check tests run
