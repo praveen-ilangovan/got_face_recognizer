@@ -18,7 +18,11 @@ def prepare_training_set() -> None:
         dirpath = os.path.join(constants.TRAINING_DATA_DIR, person)
         for imgname in os.listdir(dirpath):
             imgpath = os.path.join(dirpath, imgname)
-            for face in cv_utils.get_faces(cv_utils.read_image(imgpath)):
+            img = cv_utils.read_image(imgpath)
+            if not img:
+                continue
+
+            for face in cv_utils.get_faces(img):
                 # face[0] -> face coordinates
                 # face[1] -> grayscale face image
                 features.append(face[1])
@@ -56,6 +60,9 @@ def who_is_this(imgpath: str, show:bool = True) -> List:
         train_model()
 
     img = cv_utils.read_image(imgpath)
+    if img is None:
+        return []
+
     predictions = cv_utils.predict(img)    
 
     if show:

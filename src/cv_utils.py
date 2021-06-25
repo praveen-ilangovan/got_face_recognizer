@@ -1,10 +1,12 @@
+# Python imports
 import os
-from src import face_recognizer
 from typing import List, Optional
 
+# Project specific imports
 import cv2 as cv #type: ignore
 import numpy as np
 
+# Local imports
 from . import utils
 from . import constants
 
@@ -14,16 +16,16 @@ from . import constants
 #
 #-----------------------------------------------------------------------------#
 def read_image(imgpath: str) -> Optional[np.ndarray]:
-    """ Reads the incoming image using cv.imread.
+    """ Reads the incoming image using cv.imread
 
     Args:
         imgpath str: Path to an image file
 
     rtype:
-        numpy.ndarray
+        numpy.ndarray|None
 
     Returns:
-        A numpy array
+        A numpy array or None
     """
     if not utils.file_exists(imgpath):
         print("File not exist: {0}".format(imgpath))
@@ -35,7 +37,7 @@ def read_image(imgpath: str) -> Optional[np.ndarray]:
 # Image processing
 #
 #-----------------------------------------------------------------------------#
-def convert_to_grayscale(img: Optional[np.ndarray]) -> Optional[np.ndarray]:
+def convert_to_grayscale(img: np.ndarray) -> np.ndarray:
     """ Convert the image's colour space to grayscale
 
     Args:
@@ -47,12 +49,10 @@ def convert_to_grayscale(img: Optional[np.ndarray]) -> Optional[np.ndarray]:
     Returns:
         A numpy array
     """
-    if img is None:
-        return None
     return cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-def resize_image(img: Optional[np.ndarray], width: int= -1,
-                 height: int = -1, inter = cv.INTER_AREA) -> Optional[np.ndarray]:
+def resize_image(img: np.ndarray, width: int= -1,
+                 height: int = -1, inter = cv.INTER_AREA) -> np.ndarray:
     """ Resize the image by keeping its aspect ratio
 
     Args:
@@ -67,9 +67,6 @@ def resize_image(img: Optional[np.ndarray], width: int= -1,
     Returns:
         A numpy array
     """
-    if img is None:
-        return None
-
     # initialize the dimensions of the image to be resized and
     # grab the image size
     dim = None
@@ -95,8 +92,10 @@ def resize_image(img: Optional[np.ndarray], width: int= -1,
     # return the resized image
     return resized
 
-def get_faces(img: Optional[np.ndarray], classifier: str= constants.HAAR_CASCADE) -> List:
-    """ Detect faces in the image using the specified classifier
+def get_faces(img: np.ndarray, classifier: str= constants.HAAR_CASCADE) -> List:
+    """ Detect faces in the image using the specified classifier and return
+    a list of face coordinates (rectangle (x,y,w,h)) and cropped gray scale
+    images of the face
 
     Args:
         img numpy.ndarray: Image in an numpy array format
@@ -146,9 +145,6 @@ def get_haar_cascade_classifier() -> cv.CascadeClassifier:
     rtype:
         cv.CascadeClassifier
     """
-    # cascade_file = os.path.join(constants.CLASSIFIERS_DIR, "haar_face.xml")
-    # return cv.CascadeClassifier(cascade_file)
-
     return cv.CascadeClassifier(cv.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 #-----------------------------------------------------------------------------#
@@ -174,7 +170,7 @@ def train_model(features: np.ndarray, labels: np.ndarray, savepath: Optional[str
 
     face_recognizer.save(savepath)
 
-def predict(img: Optional[np.ndarray]) -> List:
+def predict(img: np.ndarray) -> List:
     """ Predict the face
     """
     # Reconizer
@@ -193,7 +189,7 @@ def predict(img: Optional[np.ndarray]) -> List:
 # Display the image
 #
 #-----------------------------------------------------------------------------#
-def show_image(img: Optional[np.ndarray], window_name: str= constants.NAME, wait: int= 0) -> None:
+def show_image(img: np.ndarray, window_name: str= constants.NAME, wait: int= 0) -> None:
     """ Displays the image using cv.imshow method
 
     Args:
@@ -220,6 +216,9 @@ def display_image(imgpath: str, window_name: str= constants.NAME, wait: int= 0) 
             user closes it.
     """
     img = read_image(imgpath)
+    if not img:
+        return None
+
     faces = get_faces(img)
 
     for rect, face in faces:
