@@ -28,4 +28,7 @@ tests:
 run:
 	${PYTHON} -m src ${IMAGE}
 
+clean:
+	rm -f data/*.npy model/*.yml
+
 all: check tests run

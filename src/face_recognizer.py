@@ -36,7 +36,7 @@ def prepare_training_set() -> None:
         dirpath = os.path.join(Key.TRAINING_DATA_DIR, person)
         for imgname in os.listdir(dirpath):
             img = cv_utils.prepare_image( os.path.join(dirpath, imgname) )
-            if not img:
+            if img is None:
                 continue
 
             for _, face in cv_utils.get_faces(img):
@@ -59,8 +59,7 @@ def train_model() -> None:
     """
     for f in (Key.FEATURES_NPY, Key.LABELS_NPY):
         if not utils.file_exists(f):
-            print("Failed to find training set: {0}".format(f))
-            print("Preparing training set..")
+            print("Training set not found. Preparing...")
             prepare_training_set()
             break
     
@@ -92,7 +91,7 @@ def who_is_this(imgpath: str, show: bool = True) -> List:
         A list of names as predicted by the trained model.
     """
     if not utils.file_exists(Key.MODEL_FILE):
-        print("Trained model not found. Lets train now.")
+        print("Trained model not found. Training...")
         train_model()
 
     # Read the image

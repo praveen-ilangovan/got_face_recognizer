@@ -6,7 +6,11 @@ GOT Face Recognizer
 Testing src.cv_utils module
 """
 
+# Python builtin imports
+import os
+
 # Project specific imports
+import cv2 as cv
 import numpy as np
 
 # Local imports
@@ -42,3 +46,9 @@ def test_get_faces(read_images):
         resized = cv_utils.resize_image(img, height=Key.RESIZE_HEIGHT)
         faces = cv_utils.get_faces(resized)
         assert len(faces) == 1
+
+def test_haar_cascade_file_exists():
+    assert os.path.exists(os.path.join(cv.data.haarcascades + Key.HAAR_CASCADE_FILE)) == True
+
+def test_get_haar_cascade_classifier():
+    assert isinstance(cv_utils.get_haar_cascade_classifier(), cv.CascadeClassifier)

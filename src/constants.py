@@ -18,7 +18,6 @@ NAME = "GOT Face Recognizer"
 #-----------------------------------------------------------------------------#
 SRC_DIR = os.path.dirname(__file__)
 RESOURCES_DIR = os.path.join(os.path.dirname(SRC_DIR), "resources")
-CLASSIFIERS_DIR = os.path.join(RESOURCES_DIR, "classifiers")
 TRAINING_DATA_DIR = os.path.join(RESOURCES_DIR, "training")
 PEOPLE = os.listdir(TRAINING_DATA_DIR)
 DATA_DIR = os.path.join(os.path.dirname(SRC_DIR), "data")
